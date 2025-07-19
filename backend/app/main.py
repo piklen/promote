@@ -127,17 +127,18 @@ if os.getenv("STRICT_HOST_CHECK", "false").lower() == "true":
 
 # 配置CORS中间件 - 零配置友好
 try:
+    # 获取配置的CORS源
     origins = get_default_cors_origins()
     
-    # 在零配置模式下，为了简化部署，允许更宽松的CORS策略
+    # 使用配置的源，而不是允许所有
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # 允许所有源（适用于内部部署）
-        allow_credentials=False,  # 由于允许所有源，禁用凭据
+        allow_origins=origins,  # 使用配置的源列表
+        allow_credentials=True,  # 允许凭据
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
-    logger.info("CORS配置完成 - 零配置模式")
+    logger.info(f"CORS配置完成 - 允许的源: {origins}")
 except Exception as e:
     logger.error(f"CORS配置失败: {e}")
 
