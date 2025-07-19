@@ -172,6 +172,9 @@ ENVIRONMENT=production
 DATABASE_URL=sqlite:///./data/prompt_optimizer.db
 LOG_DIR=/app/logs
 
+# 安全配置
+ENCRYPTION_MASTER_KEY=$(openssl rand -hex 32)
+
 # CORS配置
 ALLOWED_ORIGINS=$CORS_ORIGINS
 ALLOWED_HOSTS=$SERVER_IP$(if [[ -n "$DOMAIN" ]]; then echo ",$DOMAIN"; fi)

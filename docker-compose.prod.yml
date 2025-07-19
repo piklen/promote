@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     build:
@@ -8,12 +6,14 @@ services:
       target: production
     container_name: prompt-optimizer-backend-prod
     restart: always
+    env_file: .env.prod
     environment:
       - DATABASE_URL=sqlite:///./data/prompt_optimizer.db
       - PYTHONPATH=/app
       - ENVIRONMENT=production
       - LOG_DIR=/app/logs
       # 安全配置
+      - ENCRYPTION_MASTER_KEY=${ENCRYPTION_MASTER_KEY}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://yourdomain.com}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-yourdomain.com}
       # 监控配置
@@ -48,6 +48,7 @@ services:
       target: production
     container_name: prompt-optimizer-frontend-prod
     restart: always
+    env_file: .env.prod
     environment:
       - VITE_API_BASE_URL=${API_BASE_URL:-https://yourdomain.com/api/v1}
       - NGINX_CLIENT_MAX_BODY_SIZE=${CLIENT_MAX_BODY_SIZE:-10m}
