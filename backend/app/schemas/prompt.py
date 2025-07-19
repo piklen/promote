@@ -309,6 +309,47 @@ class PaginatedResponse(BaseModel):
     size: int
     pages: int
 
+# ===========================================
+# LLM服务相关模式 (新增)
+# ===========================================
+
+class LLMRequest(BaseModel):
+    """LLM文本生成请求模式"""
+    provider: LLMProvider = Field(..., description="LLM服务提供商")
+    prompt: str = Field(..., min_length=1, description="输入提示词")
+    model: str = Field(..., description="使用的模型名称")
+    temperature: float = Field(0.7, ge=0, le=2, description="温度参数")
+    max_tokens: int = Field(1000, ge=1, le=8192, description="最大生成token数")
+    parameters: Dict[str, Any] = Field(default_factory=dict, description="其他参数")
+
+class LLMUsage(BaseModel):
+    """LLM使用统计"""
+    prompt_tokens: Optional[int] = Field(None, description="输入token数")
+    completion_tokens: Optional[int] = Field(None, description="输出token数")
+    total_tokens: Optional[int] = Field(None, description="总token数")
+    input_tokens: Optional[int] = Field(None, description="输入token数（Anthropic格式）")
+    output_tokens: Optional[int] = Field(None, description="输出token数（Anthropic格式）")
+
+class LLMResponse(BaseModel):
+    """LLM文本生成响应模式"""
+    text: Optional[str] = Field(None, description="生成的文本")
+    model: str = Field(..., description="使用的模型")
+    provider: str = Field(..., description="服务提供商")
+    execution_time: float = Field(..., description="执行时间（秒）")
+    usage: Optional[LLMUsage] = Field(None, description="token使用统计")
+    error: Optional[str] = Field(None, description="错误信息")
+    finish_reason: Optional[str] = Field(None, description="完成原因")
+
+class ProvidersResponse(BaseModel):
+    """提供商列表响应模式"""
+    providers: List[str] = Field(..., description="可用的提供商列表")
+    models: Dict[str, List[str]] = Field(..., description="各提供商的可用模型")
+
+class ModelInfo(BaseModel):
+    """模型信息响应模式"""
+    provider: str = Field(..., description="提供商名称")
+    models: List[str] = Field(..., description="可用模型列表")
+
 # 前向引用解决
 PromptDetail.model_rebuild()
 PromptReadWithVersions.model_rebuild()
