@@ -23,7 +23,7 @@ api.interceptors.request.use(
 // 响应拦截器 - 统一错误处理
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
-  (error: AxiosError) => {
+  (error: AxiosError<{detail?: string}>) => {
     // 统一错误处理
     if (error.response?.status === 404) {
       console.error('资源未找到:', error.response.data?.detail || 'Unknown error');
@@ -119,6 +119,11 @@ export interface PromptVersion {
   version_name?: string;
   content: string;
   llm_config?: LLMConfig;
+  parameters?: {
+    temperature?: number;
+    max_tokens?: number;
+    model?: string;
+  };
   change_notes?: string;
   is_baseline: boolean;
   created_at: string;
@@ -128,6 +133,11 @@ export interface PromptVersionCreate {
   version_name?: string;
   content: string;
   llm_config?: LLMConfig;
+  parameters?: {
+    temperature?: number;
+    max_tokens?: number;
+    model?: string;
+  };
   change_notes?: string;
   is_baseline?: boolean;
 }

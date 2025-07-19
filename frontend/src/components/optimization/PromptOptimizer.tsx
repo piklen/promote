@@ -29,9 +29,6 @@ import {
 } from '@chakra-ui/react'
 import { StarIcon, RepeatIcon, CopyIcon } from '@chakra-ui/icons'
 import { 
-  PromptAPI, 
-  VersionAPI, 
-  LLMAPI, 
   Prompt, 
   PromptVersion, 
   ProvidersResponse,
@@ -335,8 +332,8 @@ function PromptOptimizer() {
                   placeholder="选择提供商"
                 >
                   {providers?.providers.map((provider) => (
-                    <option key={provider} value={provider}>
-                      {getProviderDisplayName(provider)}
+                    <option key={provider.name} value={provider.name}>
+                      {getProviderDisplayName(provider.name)}
                     </option>
                   ))}
                 </Select>

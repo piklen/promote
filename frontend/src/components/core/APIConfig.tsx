@@ -62,7 +62,6 @@ import {
   EditIcon, 
   DeleteIcon,
 } from '@chakra-ui/icons'
-import { LLMAPI } from '../../services/api'
 
 interface APIConfig {
   id: number
