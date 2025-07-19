@@ -160,7 +160,7 @@ async def get_config(config_id: int, db: Session = Depends(get_db)):
     return config
 
 @router.post("/", response_model=LLMAPIConfigSchema)
-@rate_limit(max_calls=10, window=60)  # 限制API配置创建频率
+@rate_limit(max_requests=10, window=60)  # 限制API配置创建频率
 async def create_config(config: LLMAPIConfigCreate, db: Session = Depends(get_db)):
     """创建新的API配置"""
     try:
@@ -216,7 +216,7 @@ async def create_config(config: LLMAPIConfigCreate, db: Session = Depends(get_db
         raise HTTPException(status_code=500, detail="创建配置失败")
 
 @router.put("/{config_id}", response_model=LLMAPIConfigSchema)
-@rate_limit(max_calls=20, window=60)  # 限制API配置更新频率
+@rate_limit(max_requests=20, window=60)  # 限制API配置更新频率
 async def update_config(config_id: int, config: LLMAPIConfigUpdate, db: Session = Depends(get_db)):
     """更新API配置"""
     try:
