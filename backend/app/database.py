@@ -12,6 +12,16 @@ SQLALCHEMY_DATABASE_URL = os.getenv(
     "sqlite:///./data/prompt_optimizer.db"
 )
 
+# 确保数据目录存在
+def ensure_data_directory():
+    """确保数据目录存在"""
+    data_dir = os.path.dirname(SQLALCHEMY_DATABASE_URL.replace("sqlite:///", ""))
+    if data_dir and not os.path.exists(data_dir):
+        os.makedirs(data_dir, exist_ok=True)
+
+# 在创建引擎前确保目录存在
+ensure_data_directory()
+
 # 创建数据库引擎
 # connect_args={"check_same_thread": False} 对SQLite很重要，允许多线程访问
 engine = create_engine(
@@ -46,5 +56,5 @@ def create_tables():
     在应用启动时调用
     """
     # 导入所有模型以确保它们被注册到Base.metadata中
-    from .models import prompt
+    from .models import prompt, api_config
     Base.metadata.create_all(bind=engine) 

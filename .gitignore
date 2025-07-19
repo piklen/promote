@@ -62,9 +62,74 @@ Thumbs.db
 # Logs
 logs/
 *.log
+deploy.log
 
 # Temporary files
 *.tmp
 *.temp
 .temp/
-tmp/ 
+tmp/
+
+# Deployment and backup files
+backups/
+*.backup
+*.bak
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Production data
+/opt/prompt-optimizer/
+
+# CI/CD
+.github/workflows/
+
+# Coverage reports
+.nyc_output
+coverage/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache (https://parceljs.org/)
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/ 

@@ -36,7 +36,7 @@
 ## 技术栈
 
 ### 后端
-- **Python 3.8+**
+- **Python 3.11+**
 - **FastAPI** - 现代高性能Web框架
 - **SQLAlchemy** - ORM数据库工具
 - **SQLite** - 轻量级数据库
@@ -145,25 +145,11 @@ npm run dev
 - **Google**: Gemini Pro 系列模型  
 - **自定义API**: 兼容OpenAI格式的其他服务
 
-## 部署指南
+## 📦 部署指南
 
-### 🚀 远程Ubuntu服务器部署（推荐）
+### Docker部署（推荐）
 
-#### 一键自动部署
-```bash
-# 使用自动部署脚本
-./remote-deploy.sh YOUR_SERVER_IP ubuntu 22
-
-# 示例
-./remote-deploy.sh 192.168.1.100 ubuntu 22
-```
-
-#### 详细部署教程
-查看完整的远程部署指南：[REMOTE_DEPLOYMENT_GUIDE.md](./REMOTE_DEPLOYMENT_GUIDE.md)
-
-### 使用Docker本地部署
-
-项目已配置完整的Docker支持，可以一键部署到Linux服务器。
+项目支持完整的Docker部署，可以一键部署到任何支持Docker的环境。
 
 #### 快速部署
 
@@ -207,7 +193,8 @@ docker-compose down
 **生产环境：**
 ```bash
 # 创建数据目录
-sudo mkdir -p /var/lib/prompt-optimizer/data
+sudo mkdir -p /opt/prompt-optimizer/{data,logs}
+sudo chown -R $(id -u):$(id -g) /opt/prompt-optimizer/
 
 # 启动生产环境
 docker-compose -f docker-compose.prod.yml up --build -d
@@ -254,7 +241,7 @@ VITE_API_BASE_URL=https://your-api-domain.com/api/v1
 - 提供了健康检查端点
 - 支持服务状态监控
 
-### 部署到云平台
+### 远程服务器部署
 
 #### 使用Docker的云平台
 - **阿里云ECS**：支持Docker部署
@@ -282,7 +269,7 @@ VITE_API_BASE_URL=https://your-api-domain.com/api/v1
 - **Railway**：支持Docker全栈部署
 - **Heroku**：支持容器化部署
 
-## 项目结构
+## 📁 项目结构
 
 ```
 promote/
@@ -309,7 +296,7 @@ promote/
 └── README.md
 ```
 
-## API文档
+## 📚 API文档
 
 ### 主要端点
 
@@ -322,7 +309,7 @@ promote/
 
 完整API文档请访问：http://localhost:8080/docs
 
-## 开发指南
+## 🛠️ 开发指南
 
 ### 添加新功能
 1. 后端：在`routers`中添加新路由
@@ -334,7 +321,7 @@ promote/
 - 前端：使用ESLint和Prettier
 - 提交信息：使用语义化版本
 
-## 贡献指南
+## 🤝 贡献指南
 
 欢迎贡献代码！请遵循以下步骤：
 1. Fork项目
@@ -343,10 +330,10 @@ promote/
 4. 推送到分支
 5. 创建Pull Request
 
-## 许可证
+## 📄 许可证
 
 MIT License
 
-## 联系方式
+## 📞 联系方式
 
 如有问题或建议，请提交Issue或联系维护者。 
