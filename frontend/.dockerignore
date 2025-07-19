@@ -1,72 +1,64 @@
-# Dependencies
+# Node.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
 .pnpm-debug.log*
 
-# Production build
+# 构建输出
 dist/
 build/
-.next/
 out/
 
-# Development
-.vite/
+# 缓存
 .cache/
+.parcel-cache/
+.next/
+.vite/
 
-# IDE
+# 环境配置
+.env
+.env.*
+
+# IDE和编辑器
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# Testing
+# 测试覆盖率
 coverage/
-.nyc_output/
-.jest/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-logs/
-*.log
-
-# Documentation
-README.md
-docs/
+.nyc_output
 
 # Git
 .git/
 .gitignore
 
-# Docker
+# Docker相关
 Dockerfile*
 docker-compose*.yml
+.dockerignore
 
-# Temporary files
+# 文档
+README.md
+*.md
+
+# 临时文件
 *.tmp
 *.temp
-.temp/
-tmp/
+.DS_Store
+Thumbs.db
 
-# ESLint
-.eslintcache
+# 开发工具配置
+.editorconfig
+.eslintrc*
+.prettierrc*
+jest.config.*
+cypress.json
 
-# TypeScript
-*.tsbuildinfo
+# 备份文件
+*.bak
+*.backup
 
-# Storybook
-.storybook-out/
-storybook-static/ 
+# 日志文件
+*.log 

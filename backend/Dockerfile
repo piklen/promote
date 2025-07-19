@@ -48,14 +48,17 @@ WORKDIR /app
 # 复制应用代码（使用.dockerignore优化）
 COPY --chown=appuser:appuser . .
 
-# 创建数据目录并设置权限
-RUN mkdir -p /app/data && chown -R appuser:appuser /app/data
+# 创建必要的目录并设置权限
+RUN mkdir -p /app/data /app/logs && \
+    chown -R appuser:appuser /app/data /app/logs && \
+    chmod -R 755 /app/data /app/logs
 
 # 设置环境变量
 ENV PYTHONPATH=/app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DATABASE_URL=sqlite:///./data/prompt_optimizer.db
+ENV LOG_DIR=/app/logs
 
 # 暴露端口
 EXPOSE 8080

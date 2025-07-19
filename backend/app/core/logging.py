@@ -63,7 +63,20 @@ def setup_logging():
     
     # 创建日志目录
     log_dir = os.getenv('LOG_DIR', './logs')
-    os.makedirs(log_dir, exist_ok=True)
+    
+    # 尝试创建日志目录，如果失败则使用临时目录
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+        # 测试是否可以写入
+        test_file = os.path.join(log_dir, '.write_test')
+        with open(test_file, 'w') as f:
+            f.write('test')
+        os.remove(test_file)
+    except (OSError, PermissionError) as e:
+        # 如果无法创建或写入日志目录，降级到标准输出
+        print(f"警告: 无法创建日志目录 {log_dir}: {e}")
+        print("降级到仅使用控制台输出")
+        log_dir = None
     
     # 根据环境确定日志级别
     environment = os.getenv('ENVIRONMENT', 'development')
@@ -92,45 +105,52 @@ def setup_logging():
     console_handler.setLevel(log_level)
     root_logger.addHandler(console_handler)
     
-    # 文件处理器（应用日志）
-    app_log_file = os.path.join(log_dir, 'app.log')
-    file_handler = RotatingFileHandler(
-        app_log_file,
-        maxBytes=10 * 1024 * 1024,  # 10MB
-        backupCount=5,
-        encoding='utf-8'
-    )
-    file_handler.setFormatter(StructuredFormatter())
-    file_handler.setLevel(logging.INFO)
-    root_logger.addHandler(file_handler)
-    
-    # 错误日志处理器
-    error_log_file = os.path.join(log_dir, 'error.log')
-    error_handler = RotatingFileHandler(
-        error_log_file,
-        maxBytes=10 * 1024 * 1024,  # 10MB
-        backupCount=5,
-        encoding='utf-8'
-    )
-    error_handler.setFormatter(StructuredFormatter())
-    error_handler.setLevel(logging.ERROR)
-    root_logger.addHandler(error_handler)
-    
-    # 访问日志处理器
-    access_log_file = os.path.join(log_dir, 'access.log')
-    access_handler = TimedRotatingFileHandler(
-        access_log_file,
-        when='midnight',
-        interval=1,
-        backupCount=30,
-        encoding='utf-8'
-    )
-    access_handler.setFormatter(StructuredFormatter())
-    
-    # 创建访问日志器
-    access_logger = logging.getLogger('access')
-    access_logger.setLevel(logging.INFO)
-    access_logger.addHandler(access_handler)
+    # 只有在日志目录可用时才创建文件处理器
+    if log_dir:
+        try:
+            # 文件处理器（应用日志）
+            app_log_file = os.path.join(log_dir, 'app.log')
+            file_handler = RotatingFileHandler(
+                app_log_file,
+                maxBytes=10 * 1024 * 1024,  # 10MB
+                backupCount=5,
+                encoding='utf-8'
+            )
+            file_handler.setFormatter(StructuredFormatter())
+            file_handler.setLevel(logging.INFO)
+            root_logger.addHandler(file_handler)
+            
+            # 错误日志处理器
+            error_log_file = os.path.join(log_dir, 'error.log')
+            error_handler = RotatingFileHandler(
+                error_log_file,
+                maxBytes=10 * 1024 * 1024,  # 10MB
+                backupCount=5,
+                encoding='utf-8'
+            )
+            error_handler.setFormatter(StructuredFormatter())
+            error_handler.setLevel(logging.ERROR)
+            root_logger.addHandler(error_handler)
+            
+            # 访问日志处理器
+            access_log_file = os.path.join(log_dir, 'access.log')
+            access_handler = TimedRotatingFileHandler(
+                access_log_file,
+                when='midnight',
+                interval=1,
+                backupCount=30,
+                encoding='utf-8'
+            )
+            access_handler.setFormatter(StructuredFormatter())
+            
+            # 创建访问日志器
+            access_logger = logging.getLogger('access')
+            access_logger.setLevel(logging.INFO)
+            access_logger.addHandler(access_handler)
+            
+        except Exception as e:
+            print(f"警告: 创建文件日志处理器失败: {e}")
+            print("继续使用控制台日志输出")
     
     # 第三方库日志级别调整
     logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
@@ -139,7 +159,7 @@ def setup_logging():
     
     logging.info("日志系统初始化完成", extra={
         "log_level": logging.getLevelName(log_level),
-        "log_dir": log_dir,
+        "log_dir": log_dir or "console-only",
         "environment": environment
     })
 

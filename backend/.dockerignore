@@ -1,88 +1,65 @@
-# Python
+# Python缓存和编译文件
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
-# Virtual environments
-env/
+# 虚拟环境
 venv/
+env/
 .venv/
-ENV/
-env.bak/
-venv.bak/
+.env/
 
-# IDE
+# 本地数据库和日志
+*.db
+*.sqlite
+*.sqlite3
+data/
+logs/
+*.log
+
+# 环境配置文件
+.env
+.env.*
+
+# IDE和编辑器文件
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# Testing
+# 测试和覆盖率
 .pytest_cache/
-.coverage
 htmlcov/
+.coverage
 .tox/
-.nox/
-.hypothesis/
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-prompt_optimizer.db
-data/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-logs/
-*.log
-
-# Documentation
-README.md
-docs/
 
 # Git
 .git/
 .gitignore
 
-# Docker
+# Docker相关
 Dockerfile*
 docker-compose*.yml
+.dockerignore
 
-# Temporary files
+# 文档
+README.md
+*.md
+
+# 临时文件
 *.tmp
 *.temp
-.temp/
-tmp/
+.DS_Store
+Thumbs.db
 
-# Tests
-tests/
-test_* 
+# 开发工具配置
+.editorconfig
+.flake8
+.pylintrc
+mypy.ini
+setup.cfg
+
+# 备份文件
+*.bak
+*.backup 

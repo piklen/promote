@@ -7,23 +7,23 @@ services:
       dockerfile: Dockerfile
       target: production
     container_name: prompt-optimizer-backend-prod
-    restart: unless-stopped
+    restart: always
     environment:
       - DATABASE_URL=sqlite:///./data/prompt_optimizer.db
       - PYTHONPATH=/app
       - ENVIRONMENT=production
+      - LOG_DIR=/app/logs
       # 安全配置
-      - SECRET_KEY=${SECRET_KEY:-$(openssl rand -hex 32)}
-      - ENCRYPTION_MASTER_KEY=${ENCRYPTION_MASTER_KEY:-$(openssl rand -hex 32)}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost}
-      # 性能配置
-      - WORKERS=${WORKERS:-1}
-      - MAX_WORKERS=${MAX_WORKERS:-4}
-      - WEB_CONCURRENCY=${WEB_CONCURRENCY:-1}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://yourdomain.com}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-yourdomain.com}
+      # 监控配置
+      - ENABLE_METRICS=${ENABLE_METRICS:-false}
+      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
     volumes:
-      - /opt/prompt-optimizer/data:/app/data:rw
-      - /opt/prompt-optimizer/logs:/app/logs:rw
+      - backend_data:/app/data
+      - backend_logs:/app/logs
+    ports:
+      - "127.0.0.1:8080:8080"  # 只绑定本地接口，由nginx代理
     networks:
       - app_network
     healthcheck:
@@ -31,12 +31,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -45,11 +40,6 @@ services:
         reservations:
           memory: 256M
           cpus: '0.25'
-    security_opt:
-      - no-new-privileges:true
-    read_only: false
-    tmpfs:
-      - /tmp:noexec,nosuid,size=100m
 
   frontend:
     build:
@@ -57,29 +47,27 @@ services:
       dockerfile: Dockerfile
       target: production
     container_name: prompt-optimizer-frontend-prod
-    restart: unless-stopped
+    restart: always
     environment:
-      - VITE_API_BASE_URL=/api/v1
-      - NODE_ENV=production
+      - VITE_API_BASE_URL=${API_BASE_URL:-https://yourdomain.com/api/v1}
+      - NGINX_CLIENT_MAX_BODY_SIZE=${CLIENT_MAX_BODY_SIZE:-10m}
     ports:
       - "80:80"
-      - "443:443"  # HTTPS支持
+      - "443:443"
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - app_network
+    volumes:
+      # SSL证书挂载点（可选）
+      - ${SSL_CERT_PATH:-./ssl}:/etc/ssl/certs/app:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      start_period: 30s
     deploy:
       resources:
         limits:
@@ -88,34 +76,32 @@ services:
         reservations:
           memory: 128M
           cpus: '0.1'
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp:noexec,nosuid,size=50m
-      - /var/cache/nginx:noexec,nosuid,size=50m
-      - /var/run:noexec,nosuid,size=10m
+
+  # 可选：监控服务（生产环境推荐）
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: prompt-optimizer-watchtower
+    restart: always
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_INCLUDE_STOPPED=true
+      - WATCHTOWER_REVIVE_STOPPED=false
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: prompt-optimizer-backend-prod prompt-optimizer-frontend-prod
+    profiles:
+      - monitoring
 
 networks:
   app_network:
     driver: bridge
+    name: prompt-optimizer-network-prod
 
 volumes:
   backend_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/prompt-optimizer/data
-  
+    name: prompt-optimizer-data-prod
   backend_logs:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/prompt-optimizer/logs
-
-# 在生产环境中，数据持久化到主机目录
-# 确保目录存在且有适当权限:
-# sudo mkdir -p /opt/prompt-optimizer/{data,logs}
-# sudo chown -R $(id -u):$(id -g) /opt/prompt-optimizer/ 
+    name: prompt-optimizer-logs-prod 

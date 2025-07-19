@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, ConfigDict
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from enum import Enum
@@ -73,6 +73,8 @@ class APITestRequest(BaseModel):
 
 class APITestResponse(BaseModel):
     """API测试响应模式"""
+    model_config = ConfigDict(protected_namespaces=())  # 允许 model_ 前缀的字段
+    
     status: TestStatus
     response: Optional[str] = None
     execution_time: Optional[float] = None
