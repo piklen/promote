@@ -1,0 +1,126 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: prompt-optimizer-backend-prod
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=sqlite:///./data/prompt_optimizer.db
+      - PYTHONPATH=/app
+      - ENVIRONMENT=production
+      # 安全配置
+      - SECRET_KEY=${SECRET_KEY:-$(openssl rand -hex 32)}
+      - ENCRYPTION_MASTER_KEY=${ENCRYPTION_MASTER_KEY:-$(openssl rand -hex 32)}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost}
+      # 性能配置
+      - WORKERS=${WORKERS:-1}
+      - MAX_WORKERS=${MAX_WORKERS:-4}
+      - WEB_CONCURRENCY=${WEB_CONCURRENCY:-1}
+    volumes:
+      - /opt/prompt-optimizer/data:/app/data:rw
+      - /opt/prompt-optimizer/logs:/app/logs:rw
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: prompt-optimizer-frontend-prod
+    restart: unless-stopped
+    environment:
+      - VITE_API_BASE_URL=/api/v1
+      - NODE_ENV=production
+    ports:
+      - "80:80"
+      - "443:443"  # HTTPS支持
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=50m
+      - /var/cache/nginx:noexec,nosuid,size=50m
+      - /var/run:noexec,nosuid,size=10m
+
+networks:
+  app_network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: prompt-optimizer-br
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  backend_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/prompt-optimizer/data
+  
+  backend_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/prompt-optimizer/logs
+
+# 在生产环境中，数据持久化到主机目录
+# 确保目录存在且有适当权限:
+# sudo mkdir -p /opt/prompt-optimizer/{data,logs}
+# sudo chown -R $(id -u):$(id -g) /opt/prompt-optimizer/ 

@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: prompt-optimizer-backend-dev
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=sqlite:///./data/prompt_optimizer.db
+      - PYTHONPATH=/app
+      - ENVIRONMENT=development
+      # LLM API配置（开发环境可选）
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - CUSTOM_API_KEY=${CUSTOM_API_KEY:-}
+      - CUSTOM_API_URL=${CUSTOM_API_URL:-}
+    volumes:
+      - backend_data:/app/data
+    ports:
+      - "8080:8080"  # 开发环境暴露后端端口便于调试
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development  # 使用开发阶段
+    container_name: prompt-optimizer-frontend-dev
+    restart: unless-stopped
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080/api/v1
+    ports:
+      - "5173:5173"  # Vite开发服务器端口
+      - "80:80"      # Nginx端口
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  app_network:
+    driver: bridge
+    name: prompt-optimizer-network
+
+volumes:
+  backend_data:
+    driver: local
+    name: prompt-optimizer-data-dev 
