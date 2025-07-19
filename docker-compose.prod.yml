@@ -99,11 +99,6 @@ services:
 networks:
   app_network:
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: prompt-optimizer-br
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
 
 volumes:
   backend_data:
