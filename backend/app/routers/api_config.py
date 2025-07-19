@@ -168,7 +168,7 @@ async def create_config(config: LLMAPIConfigCreate, db: Session = Depends(get_db
         if not InputValidator.validate_provider_name(config.provider):
             raise HTTPException(status_code=400, detail="无效的提供商名称")
         
-        if not InputValidator.validate_api_key(config.api_key):
+        if not InputValidator.validate_api_key(config.api_key, config.provider):
             raise HTTPException(status_code=400, detail="无效的API密钥格式")
         
         if config.api_url and not InputValidator.validate_url(config.api_url):
@@ -232,7 +232,7 @@ async def update_config(config_id: int, config: LLMAPIConfigUpdate, db: Session 
         
         # 输入验证
         if "api_key" in update_data and update_data["api_key"]:
-            if not InputValidator.validate_api_key(update_data["api_key"]):
+            if not InputValidator.validate_api_key(update_data["api_key"], db_config.provider):
                 raise HTTPException(status_code=400, detail="无效的API密钥格式")
             # 加密新的API密钥
             update_data["api_key"] = security_manager.encrypt_api_key(update_data["api_key"])
@@ -363,4 +363,144 @@ async def get_available_providers(db: Session = Depends(get_db)):
         providers=providers,
         configs=configs,
         models=models
-    ) 
+    )
+
+
+@router.post("/detect-models/{config_id}")
+async def detect_models(config_id: int, db: Session = Depends(get_db)):
+    """检测API配置可用的模型列表"""
+    db_config = db.query(LLMAPIConfig).filter(LLMAPIConfig.id == config_id).first()
+    if not db_config:
+        raise HTTPException(status_code=404, detail="API配置不存在")
+    
+    try:
+        # 解密API密钥
+        decrypted_api_key = security_manager.decrypt_api_key(db_config.api_key)
+        
+        if db_config.provider == "openai":
+            # OpenAI模型检测
+            models = await _detect_openai_models(decrypted_api_key, db_config.api_url)
+        elif db_config.provider == "google" or db_config.provider == "google_custom":
+            # Google模型检测
+            models = await _detect_google_models(decrypted_api_key, db_config.api_url, db_config.provider)
+        elif db_config.provider == "anthropic":
+            # Anthropic模型检测（使用预设列表，因为他们不提供模型列表API）
+            models = ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"]
+        elif db_config.provider == "custom":
+            # 自定义API模型检测
+            models = await _detect_custom_models(decrypted_api_key, db_config.api_url)
+        else:
+            models = db_config.supported_models
+        
+        return {
+            "status": "success",
+            "models": models,
+            "detected_count": len(models),
+            "provider": db_config.provider
+        }
+        
+    except Exception as e:
+        logger.error(f"Model detection failed for {db_config.provider}: {str(e)}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "models": [],
+            "detected_count": 0,
+            "provider": db_config.provider
+        }
+
+
+async def _detect_openai_models(api_key: str, base_url: str = None) -> List[str]:
+    """检测OpenAI可用模型"""
+    import httpx
+    
+    url = f"{base_url or 'https://api.openai.com'}/v1/models"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        # 过滤出有用的模型
+        models = []
+        for model in data.get("data", []):
+            model_id = model.get("id", "")
+            if any(prefix in model_id for prefix in ["gpt-", "text-", "davinci", "curie", "babbage", "ada"]):
+                models.append(model_id)
+        
+        return sorted(models)
+
+
+async def _detect_google_models(api_key: str, base_url: str = None, provider: str = "google") -> List[str]:
+    """检测Google可用模型"""
+    if provider == "google":
+        # Google官方API，返回已知模型
+        return [
+            "gemini-pro", 
+            "gemini-pro-vision", 
+            "gemini-1.5-pro-latest", 
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-latest"
+        ]
+    else:
+        # Google自定义地址，尝试检测
+        import httpx
+        
+        if not base_url:
+            raise ValueError("自定义Google API需要提供base_url")
+        
+        # 尝试OpenAI兼容的模型端点
+        try:
+            url = f"{base_url.rstrip('/')}/v1/models"
+            headers = {"Authorization": f"Bearer {api_key}"}
+            
+            async with httpx.AsyncClient(timeout=30) as client:
+                response = await client.get(url, headers=headers)
+                response.raise_for_status()
+                data = response.json()
+                
+                models = []
+                for model in data.get("data", []):
+                    model_id = model.get("id", "")
+                    if "gemini" in model_id.lower():
+                        models.append(model_id)
+                
+                return sorted(models) if models else [
+                    "gemini-pro", 
+                    "gemini-pro-vision", 
+                    "gemini-1.5-pro-latest", 
+                    "gemini-1.5-flash"
+                ]
+        except:
+            # 如果检测失败，返回默认模型
+            return [
+                "gemini-pro", 
+                "gemini-pro-vision", 
+                "gemini-1.5-pro-latest", 
+                "gemini-1.5-flash"
+            ]
+
+
+async def _detect_custom_models(api_key: str, base_url: str) -> List[str]:
+    """检测自定义API可用模型"""
+    import httpx
+    
+    if not base_url:
+        raise ValueError("自定义API需要提供base_url")
+    
+    url = f"{base_url.rstrip('/')}/v1/models"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        models = []
+        for model in data.get("data", []):
+            model_id = model.get("id", "")
+            if model_id:
+                models.append(model_id)
+        
+        return sorted(models) 

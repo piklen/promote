@@ -112,6 +112,7 @@ function APIConfig() {
   const [templates, setTemplates] = useState<ProviderTemplate[]>([])
   const [loading, setLoading] = useState(true)
   const [testing, setTesting] = useState<number | null>(null)
+  const [detectingModels, setDetectingModels] = useState<number | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<ProviderTemplate | null>(null)
   const [configForm, setConfigForm] = useState<ConfigFormData>({
     provider: '',
@@ -357,6 +358,57 @@ function APIConfig() {
     setTesting(null)
   }
 
+  const handleDetectModels = async (config: APIConfig) => {
+    setDetectingModels(config.id)
+    
+    try {
+      const response = await fetch(`/api/v1/api-config/detect-models/${config.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      const result = await response.json()
+      
+      if (result.status === 'success') {
+        toast({
+          title: `${config.display_name} 模型检测成功`,
+          description: `检测到 ${result.detected_count} 个模型`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        })
+        
+        // 更新配置表单中的模型列表（如果正在编辑这个配置）
+        if (editingConfig && editingConfig.id === config.id) {
+          setConfigForm(prev => ({
+            ...prev,
+            supported_models: result.models
+          }))
+        }
+      } else {
+        toast({
+          title: `${config.display_name} 模型检测失败`,
+          description: result.error,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        })
+      }
+    } catch (error: any) {
+      toast({
+        title: `${config.display_name} 模型检测失败`,
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      })
+    }
+    
+    setDetectingModels(null)
+  }
+
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'success': return 'green'
@@ -503,6 +555,16 @@ function APIConfig() {
                             >
                               测试
                             </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleDetectModels(config)}
+                              isLoading={detectingModels === config.id}
+                              isDisabled={!config.is_enabled}
+                              colorScheme="purple"
+                              variant="outline"
+                            >
+                              检测模型
+                            </Button>
                             <IconButton
                               aria-label="编辑"
                               icon={<EditIcon />}
@@ -634,6 +696,17 @@ function APIConfig() {
                     <Button onClick={handleAddModel} size="sm">
                       添加
                     </Button>
+                    {editingConfig && (
+                      <Button 
+                        onClick={() => handleDetectModels(editingConfig)} 
+                        size="sm" 
+                        colorScheme="purple" 
+                        variant="outline"
+                        isLoading={detectingModels === editingConfig.id}
+                      >
+                        检测模型
+                      </Button>
+                    )}
                   </HStack>
                   <HStack mt={2} flexWrap="wrap">
                     {configForm.supported_models.map((model) => (

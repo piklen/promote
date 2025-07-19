@@ -108,16 +108,22 @@ class InputValidator:
         return bool(url_pattern.match(url))
     
     @staticmethod
-    def validate_api_key(api_key: str, provider: str) -> bool:
+    def validate_api_key(api_key: str, provider: str = None) -> bool:
         """验证API密钥格式"""
         if not api_key or not isinstance(api_key, str):
             return False
+        
+        # 如果没有指定provider，进行基本验证
+        if not provider:
+            return len(api_key) >= 10
         
         # 不同提供商的API密钥格式验证
         patterns = {
             'openai': r'^sk-[A-Za-z0-9]{32,}$',
             'anthropic': r'^sk-ant-api03-[A-Za-z0-9_-]{95}$',
             'google': r'^[A-Za-z0-9_-]{39}$',
+            'google_custom': r'^[A-Za-z0-9_-]{10,}$',  # Google自定义，更宽松的验证
+            'custom': r'^[A-Za-z0-9_-]{10,}$',  # 自定义API，基本验证
         }
         
         pattern = patterns.get(provider.lower())
@@ -128,16 +134,85 @@ class InputValidator:
         return len(api_key) >= 10
     
     @staticmethod
-    def sanitize_input(input_str: str, max_length: int = 1000) -> str:
-        """清理输入字符串"""
+    def validate_provider_name(provider: str) -> bool:
+        """验证提供商名称"""
+        if not provider or not isinstance(provider, str):
+            return False
+        
+        # 允许的提供商名称
+        valid_providers = {'openai', 'anthropic', 'google', 'google_custom', 'custom'}
+        return provider.lower() in valid_providers
+    
+    @staticmethod
+    def detect_sql_injection(input_str: str) -> bool:
+        """检测SQL注入攻击"""
+        if not input_str:
+            return False
+        
+        # SQL注入关键词模式
+        sql_patterns = [
+            r'(\b(union|select|insert|update|delete|drop|create|alter|exec|execute)\b)',
+            r'(--|#|\/\*|\*\/)',
+            r'(\bor\b.*=.*\bor\b)',
+            r'(\band\b.*=.*\band\b)',
+            r'(\b1\s*=\s*1\b)',
+            r'(\'\s*or\s*\')',
+            r'(\"\s*or\s*\")',
+        ]
+        
+        input_lower = input_str.lower()
+        for pattern in sql_patterns:
+            if re.search(pattern, input_lower, re.IGNORECASE):
+                return True
+        
+        return False
+    
+    @staticmethod
+    def detect_xss(input_str: str) -> bool:
+        """检测XSS攻击"""
+        if not input_str:
+            return False
+        
+        # XSS攻击模式
+        xss_patterns = [
+            r'<script[^>]*>.*?</script>',
+            r'javascript:',
+            r'on\w+\s*=',
+            r'<iframe[^>]*>',
+            r'<object[^>]*>',
+            r'<embed[^>]*>',
+            r'<link[^>]*>',
+            r'<meta[^>]*>',
+            r'<style[^>]*>.*?</style>',
+            r'eval\s*\(',
+            r'expression\s*\(',
+        ]
+        
+        input_lower = input_str.lower()
+        for pattern in xss_patterns:
+            if re.search(pattern, input_lower, re.IGNORECASE):
+                return True
+        
+        return False
+    
+    @staticmethod
+    def sanitize_text(input_str: str, max_length: int = 1000) -> str:
+        """清理文本内容"""
         if not input_str:
             return ""
         
-        # 移除危险字符
+        # 移除危险字符和标签
         sanitized = re.sub(r'[<>"\']', '', str(input_str))
+        # 移除多余的空白字符
+        sanitized = re.sub(r'\s+', ' ', sanitized).strip()
         
         # 限制长度
         return sanitized[:max_length]
+    
+    @staticmethod
+    def sanitize_input(input_str: str, max_length: int = 1000) -> str:
+        """清理输入字符串（兼容性方法）"""
+        return InputValidator.sanitize_text(input_str, max_length)
 
 
 # 安全相关的异常类
