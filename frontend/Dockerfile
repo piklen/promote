@@ -10,7 +10,7 @@ RUN apk add --no-cache libc6-compat
 # 复制package文件
 COPY package*.json ./
 
-# 安装依赖
+# 安装生产依赖
 RUN npm ci --only=production && npm cache clean --force
 
 # 开发阶段
@@ -37,10 +37,7 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 FROM node:18-alpine as build
 WORKDIR /app
 
-# 复制依赖
-COPY --from=deps /app/node_modules ./node_modules
-
-# 安装所有依赖（包括开发依赖）
+# 复制package文件并安装所有依赖
 COPY package*.json ./
 RUN npm ci
 
