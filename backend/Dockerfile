@@ -53,22 +53,30 @@ RUN mkdir -p /app/data /app/logs && \
     chown -R appuser:appuser /app/data /app/logs && \
     chmod -R 755 /app/data /app/logs
 
-# 设置环境变量
+# 设置基本环境变量
 ENV PYTHONPATH=/app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV DATABASE_URL=sqlite:///./data/prompt_optimizer.db
 ENV LOG_DIR=/app/logs
 
+# 零配置部署 - 内置默认配置
+ENV DEPLOYMENT_MODE=zero-config
+ENV ENVIRONMENT=production
+
 # 暴露端口
 EXPOSE 8080
 
-# 健康检查优化
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+# 健康检查 - 适应零配置部署
+HEALTHCHECK --interval=30s --timeout=15s --start-period=120s --retries=5 \
   CMD curl -f http://localhost:8080/health || exit 1
 
 # 切换到非root用户
 USER appuser
 
-# 启动命令优化
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"] 
+# 启动命令 - 零配置模式
+CMD ["uvicorn", "app.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8080", \
+     "--workers", "1", \
+     "--access-log"] 

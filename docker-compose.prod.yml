@@ -6,32 +6,26 @@ services:
       target: production
     container_name: prompt-optimizer-backend-prod
     restart: always
-    env_file: .env.prod
+    # 移除 env_file 依赖，实现零配置部署
     environment:
       - DATABASE_URL=sqlite:///./data/prompt_optimizer.db
       - PYTHONPATH=/app
       - ENVIRONMENT=production
       - LOG_DIR=/app/logs
-      # 安全配置
-      - ENCRYPTION_MASTER_KEY=${ENCRYPTION_MASTER_KEY}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://yourdomain.com}
-      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-yourdomain.com}
-      # 监控配置
-      - ENABLE_METRICS=${ENABLE_METRICS:-false}
-      - ENABLE_DEBUG=${ENABLE_DEBUG:-false}
+      # 零配置模式 - 最小环境变量设置
+      - DEPLOYMENT_MODE=zero-config
     volumes:
       - backend_data:/app/data
       - backend_logs:/app/logs
-    ports:
-      - "127.0.0.1:8080:8080"  # 只绑定本地接口，由nginx代理
+    # 移除端口暴露，只在容器网络内访问
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      timeout: 15s
+      retries: 5
+      start_period: 120s  # 给足够时间启动
     deploy:
       resources:
         limits:
@@ -48,13 +42,15 @@ services:
       target: production
     container_name: prompt-optimizer-frontend-prod
     restart: always
-    env_file: .env.prod
     environment:
-      - VITE_API_BASE_URL=${API_BASE_URL:-https://yourdomain.com/api/v1}
-      - NGINX_CLIENT_MAX_BODY_SIZE=${CLIENT_MAX_BODY_SIZE:-10m}
+      # 零配置模式 - 使用nginx代理，前端无需直接访问后端
+      - VITE_API_BASE_URL=/api/v1
+      - NGINX_CLIENT_MAX_BODY_SIZE=10m
     ports:
       - "80:80"
       - "443:443"
+      # 暴露8080端口供外部直接访问API（可选）
+      - "8080:8080"
     depends_on:
       backend:
         condition: service_healthy
@@ -62,9 +58,9 @@ services:
       - app_network
     volumes:
       # SSL证书挂载点（可选）
-      - ${SSL_CERT_PATH:-./ssl}:/etc/ssl/certs/app:ro
+      - ./ssl:/etc/ssl/certs/app:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -77,22 +73,6 @@ services:
         reservations:
           memory: 128M
           cpus: '0.1'
-
-  # 可选：监控服务（生产环境推荐）
-  watchtower:
-    image: containrrr/watchtower:latest
-    container_name: prompt-optimizer-watchtower
-    restart: always
-    environment:
-      - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=300
-      - WATCHTOWER_INCLUDE_STOPPED=true
-      - WATCHTOWER_REVIVE_STOPPED=false
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: prompt-optimizer-backend-prod prompt-optimizer-frontend-prod
-    profiles:
-      - monitoring
 
 networks:
   app_network:
