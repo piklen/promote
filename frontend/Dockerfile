@@ -56,10 +56,6 @@ RUN npm run build
 # 生产阶段
 FROM nginx:1.25-alpine as production
 
-# 创建非root用户
-RUN addgroup -g 1001 -S nginx && \
-    adduser -S nginx -u 1001
-
 # 安装运行时依赖
 RUN apk add --no-cache \
     curl \
@@ -75,7 +71,7 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # 创建健康检查端点
 RUN echo '{"status": "ok", "service": "frontend", "timestamp": "'$(date -Iseconds)'"}' > /usr/share/nginx/html/health
 
-# 创建nginx运行目录
+# 创建nginx运行目录并设置权限
 RUN mkdir -p /var/cache/nginx/client_temp && \
     mkdir -p /var/cache/nginx/proxy_temp && \
     mkdir -p /var/cache/nginx/fastcgi_temp && \
