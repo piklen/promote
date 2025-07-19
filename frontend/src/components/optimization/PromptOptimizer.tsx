@@ -23,24 +23,23 @@ import {
   Badge,
   Divider,
   useToast,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
   IconButton,
-  Spinner,
   Alert,
   AlertIcon,
 } from '@chakra-ui/react'
 import { StarIcon, RepeatIcon, CopyIcon } from '@chakra-ui/icons'
-import { PromptAPI, VersionAPI, LLMAPI, Prompt, PromptVersion } from '../../services/api'
+import { 
+  PromptAPI, 
+  VersionAPI, 
+  LLMAPI, 
+  Prompt, 
+  PromptVersion, 
+  ProvidersResponse,
+  LLMRequest,
+  LLMResponse,
+  promptApi,
+  llmApi
+} from '../../services/api'
 import QuickTemplates from './QuickTemplates'
 import PromptQualityAnalyzer from './PromptQualityAnalyzer'
 
@@ -64,7 +63,6 @@ function PromptOptimizer() {
   const [maxTokens, setMaxTokens] = useState(500)
   const [testResults, setTestResults] = useState<TestResult[]>([])
   const [loading, setLoading] = useState(false)
-  const [comparing, setComparing] = useState(false)
   
   // LLM相关状态
   const [providers, setProviders] = useState<ProvidersResponse | null>(null)
@@ -93,7 +91,8 @@ function PromptOptimizer() {
 
   useEffect(() => {
     if (selectedProvider && providers) {
-      const models = providers.models[selectedProvider] || []
+      const providerInfo = providers.providers.find(p => p.name === selectedProvider)
+      const models = providerInfo?.models || []
       setAvailableModels(models)
       setSelectedModel(models[0] || '')
     }
@@ -121,7 +120,7 @@ function PromptOptimizer() {
       // 选择第一个可用的提供商
       if (data.providers.length > 0) {
         const firstProvider = data.providers[0]
-        setSelectedProvider(firstProvider)
+        setSelectedProvider(firstProvider.name)
       }
     } catch (error) {
       toast({
@@ -222,35 +221,33 @@ function PromptOptimizer() {
     
     try {
       const request: LLMRequest = {
-        provider: selectedProvider,
-        model: selectedModel,
         prompt: promptContent,
-        temperature: temperature,
-        max_tokens: maxTokens,
-        parameters: {}
+        config: {
+          provider: selectedProvider as 'openai' | 'anthropic' | 'google' | 'google_custom' | 'custom',
+          model: selectedModel,
+          temperature: temperature,
+          max_tokens: maxTokens,
+        }
       }
       
-      const response: LLMResponse = await llmApi.generateText(request)
+      const response: LLMResponse = await llmApi.generateCompletion(request)
       
       const result: TestResult = {
-        output: response.error ? 
-          `错误: ${response.error}` : 
-          (response.text || '无返回内容'),
-        executionTime: response.execution_time,
+        output: response.content || '无返回内容',
+        executionTime: response.execution_time || 0,
         rating: undefined,
         id: Date.now(),
         usage: response.usage,
         provider: response.provider,
-        model: response.model,
-        error: response.error
+        model: response.model
       }
       
       setTestResults([result, ...testResults.slice(0, 4)])
       
       toast({
-        title: response.error ? '测试失败' : '测试完成',
-        description: response.error ? response.error : `执行时间: ${response.execution_time.toFixed(2)}秒`,
-        status: response.error ? 'error' : 'success',
+        title: '测试完成',
+        description: `执行时间: ${(response.execution_time || 0).toFixed(2)}秒`,
+        status: 'success',
         duration: 3000,
         isClosable: true,
       })

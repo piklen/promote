@@ -19,7 +19,6 @@ import {
   TabPanels,
   Tab,
   TabPanel,
-  Divider,
   Code,
   Alert,
   AlertIcon,

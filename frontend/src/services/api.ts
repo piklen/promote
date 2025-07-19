@@ -26,11 +26,11 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     // 统一错误处理
     if (error.response?.status === 404) {
-      console.error('资源未找到:', error.response.data?.detail);
+      console.error('资源未找到:', error.response.data?.detail || 'Unknown error');
     } else if (error.response?.status === 422) {
-      console.error('数据验证错误:', error.response.data?.detail);
-    } else if (error.response?.status >= 500) {
-      console.error('服务器错误:', error.response.data?.detail);
+      console.error('数据验证错误:', error.response.data?.detail || 'Validation error');
+    } else if (error.response?.status && error.response.status >= 500) {
+      console.error('服务器错误:', error.response.data?.detail || 'Server error');
     }
     return Promise.reject(error);
   }
@@ -46,6 +46,37 @@ export interface LLMConfig {
   frequency_penalty?: number;
   presence_penalty?: number;
   stop_sequences?: string[];
+}
+
+// 新增缺失的类型定义
+export interface LLMRequest {
+  prompt: string;
+  config: LLMConfig;
+}
+
+export interface LLMResponse {
+  content: string;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+  model?: string;
+  provider?: string;
+  execution_time?: number;
+  cost?: number;
+}
+
+export interface ProviderInfo {
+  name: string;
+  display_name: string;
+  models: string[];
+  available: boolean;
+  configured: boolean;
+}
+
+export interface ProvidersResponse {
+  providers: ProviderInfo[];
 }
 
 export interface Prompt {
@@ -208,7 +239,7 @@ export class VersionAPI {
 
 export class LLMAPI {
   // 获取LLM提供商列表
-  static async getProviders(): Promise<any[]> {
+  static async getProviders(): Promise<ProvidersResponse> {
     const response = await api.get('/llm/providers');
     return response.data;
   }
@@ -226,10 +257,7 @@ export class LLMAPI {
   }
 
   // 执行LLM请求
-  static async generateCompletion(data: {
-    prompt: string;
-    config: LLMConfig;
-  }): Promise<any> {
+  static async generateCompletion(data: LLMRequest): Promise<LLMResponse> {
     const response = await api.post('/llm/generate', data);
     return response.data;
   }

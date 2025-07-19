@@ -27,7 +27,7 @@ import {
   Badge,
 } from '@chakra-ui/react'
 import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons'
-import { promptApi, Prompt, PromptCreate } from '../services/api'
+import { promptApi, Prompt, PromptCreate } from '../../services/api'
 
 function PromptList() {
   const [prompts, setPrompts] = useState<Prompt[]>([])

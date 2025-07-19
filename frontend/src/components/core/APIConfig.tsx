@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Box,
   VStack,
@@ -21,10 +21,7 @@ import {
   Td,
   TableContainer,
   Spinner,
-  Icon,
   Flex,
-  Code,
-  Divider,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -60,15 +57,12 @@ import {
 } from '@chakra-ui/react'
 import { 
   CheckIcon, 
-  WarningIcon, 
   RepeatIcon, 
   AddIcon, 
   EditIcon, 
   DeleteIcon,
-  ExternalLinkIcon 
 } from '@chakra-ui/icons'
 import { LLMAPI } from '../../services/api'
-import { useRef } from 'react'
 
 interface APIConfig {
   id: number

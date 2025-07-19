@@ -29,7 +29,7 @@ import {
   StatHelpText,
   Icon,
 } from '@chakra-ui/react'
-import { CheckIcon, WarningIcon, InfoIcon, CloseIcon } from '@chakra-ui/icons'
+import { CheckIcon, WarningIcon, InfoIcon } from '@chakra-ui/icons'
 
 interface QualityCheck {
   id: string

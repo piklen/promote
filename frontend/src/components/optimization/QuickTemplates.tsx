@@ -23,7 +23,7 @@ import {
   IconButton,
   Tooltip,
 } from '@chakra-ui/react'
-import { CopyIcon, ViewIcon } from '@chakra-ui/icons'
+import { CopyIcon, InfoIcon } from '@chakra-ui/icons'
 
 interface QuickTemplate {
   id: string
@@ -371,7 +371,7 @@ function QuickTemplates({ onSelectTemplate }: QuickTemplatesProps) {
                     <Tooltip label="预览模板">
                       <IconButton
                         aria-label="预览"
-                        icon={<ViewIcon />}
+                        icon={<InfoIcon />}
                         size="xs"
                         variant="outline"
                         onClick={() => handleViewTemplate(template)}
